@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Crox RAS",
+  "description": "Firebase-backed Remote Administration System",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
