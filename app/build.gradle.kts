@@ -9,6 +9,44 @@ plugins {
   alias(libs.plugins.google.services)
 }
 
+// Ensure google-services.json exists to prevent build failures if missing from git checkout
+val gsFile = file("google-services.json")
+if (!gsFile.exists()) {
+  try {
+    gsFile.writeText("""
+    {
+      "project_info": {
+        "project_number": "1234567890",
+        "project_id": "crox-ras-dummy",
+        "storage_bucket": "crox-ras-dummy.appspot.com"
+      },
+      "client": [
+        {
+          "client_info": {
+            "mobilesdk_app_id": "1:1234567890:android:1234567890abcdef",
+            "android_client_info": {
+              "package_name": "com.aistudio.croxras.hx92qa"
+            }
+          },
+          "oauth_client": [],
+          "api_key": [
+            {
+              "current_key": "AIzaSyDummyKeyForBuildOnly123456789"
+            }
+          ],
+          "services": {
+            "analytics_service": {
+              "status": 1
+            }
+          }
+        }
+      ],
+      "configuration_version": "1"
+    }
+    """.trimIndent())
+  } catch (_: Exception) {}
+}
+
 android {
   namespace = "com.crox"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -44,9 +82,7 @@ android {
           } catch (_: Exception) {}
         }
       }
-      if (keystore.exists()) {
-        storeFile = keystore
-      }
+      storeFile = keystore
       storePassword = "android"
       keyAlias = "androiddebugkey"
       keyPassword = "android"
