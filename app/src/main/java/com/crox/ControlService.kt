@@ -137,11 +137,27 @@ class ControlService : android.app.Service() {
         commandsRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 for (child in snapshot.children) {
-                    val commandStr = child.getValue(String::class.java)
-                    if (commandStr != null) {
-                        handleCommand(commandStr)
-                        child.ref.removeValue()
+                    try {
+                        val commandStr = child.getValue(String::class.java)
+                        if (commandStr != null) {
+                            handleCommand(commandStr)
+                        } else {
+                            val action = child.child("action").getValue(String::class.java) ?: ""
+                            val arg = child.child("arg").getValue(String::class.java) ?: ""
+                            val arg2 = child.child("arg2").getValue(String::class.java) ?: ""
+                            if (action.isNotEmpty()) {
+                                val json = JSONObject().apply {
+                                    put("action", action)
+                                    put("arg", arg)
+                                    put("arg2", arg2)
+                                }
+                                handleCommand(json.toString())
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error handling command", e)
                     }
+                    child.ref.removeValue()
                 }
             }
 
